@@ -1,56 +1,36 @@
-import xml.etree.ElementTree as ET
-import requests
 import sys
-import time
+import os, uuid
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+
+#os.environ["HTTP_PROXY"] = "http://127.0.0.1:8118"
+#os.environ["HTTPS_PROXY"] = "http://127.0.0.1:8118"
 
 
-def urlExtractor(fileOut, target, response):
-
-    if response.status_code != 200:
-        print ("[+] End")
-        exit(1)
-
-    root = ET.fromstring(response.text)
-    #root = tree.getroot()
-
-    try:
-        blobs = root.find('Blobs')
-
-        for blob in blobs:
-            print("[+] Blob Url: " + blob.find('Url').text)
-            fileOut.write(blob.find('Url').text + '\n')
-            time.sleep(1)
-    except:
-        pass
-
-    try:
-        nextMarker = root.find('NextMarker').text
-        print("[+] New Page! " + nextMarker)
-        response = requests.get(target + "&marker=" + nextMarker)
-        urlExtractor(fileOut,target,response)
-
-    except:
-        print("[+] No other NextMarker tags, ending...")
-
-
-
-def main():
-    if len(sys.argv) != 4:
-        print(sys.argv[0] + " <account> <container> <outfile>")
-        exit(1)
-
-    target = "https://" + sys.argv[1] + ".blob.core.windows.net/" + sys.argv[2] + "?restype=container&comp=list"
-    print(target)
-    response = requests.get(target)
-    
-    if response.status_code != 200:
-        print ("[-]" + "Reponse code" + str(response.status_code) + " " + target)
-        exit(1)
-    
-
-    fileOut = open(sys.argv[3],'a')
-    urlExtractor(fileOut,target,response)
-
+Object_URL = "https://{0}.blob.core.windows.net/{1}/{2}"
 
 if __name__ == "__main__":
-    main()
+
+    if len(sys.argv) != 4:
+        print("Usage: " + sys.argv[0] + "<account name>" + "<container name>" + "<outfile.txt>")
+
+    account_name = sys.argv[1]
+    container_name = sys.argv[2]
+    out_file  = sys.argv[3]
+
+    service = ContainerClient(account_url="https://" + account_name + ".blob.core.windows.net", container_name= container_name)
+
+    # List the blobs in the container
+    blob_list = service.list_blobs()
+
+    url_file = open(out_file, mode='a')
+
+    size = 0
+
+    for blob in blob_list:
+        size += blob.size
+        url = Object_URL.format(account_name, container_name, str(blob.name)) # Cast to string to avoid None
+        print(url)
+        url_file.write(url+'\n')
+
+    print("Size: {} MB".format(str(size/1024/1024)))
+    
