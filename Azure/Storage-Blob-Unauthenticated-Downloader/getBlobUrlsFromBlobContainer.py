@@ -12,6 +12,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) != 4:
         print("Usage: " + sys.argv[0] + "<account name>" + "<container name>" + "<outfile.txt>")
+        exit(1)
 
     account_name = sys.argv[1]
     container_name = sys.argv[2]
@@ -33,4 +34,3 @@ if __name__ == "__main__":
         url_file.write(url+'\n')
 
     print("Size: {} MB".format(str(size/1024/1024)))
-    
