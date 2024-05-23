@@ -1,13 +1,14 @@
 import os
 import sys
 
-import time
 import requests
 from tqdm import tqdm
+from urllib.parse import urlparse
+
 
 proxy_definitions = {
-    'http': 'http://127.0.0.1:8118',
-    'https': 'http://127.0.0.1:8118'
+    #'http': 'http://127.0.0.1:8118',
+    #'https': 'http://127.0.0.1:8118'
 }
 
 def downloadFile(inFile, outPath):
@@ -18,22 +19,24 @@ def downloadFile(inFile, outPath):
                 r = requests.get(line, allow_redirects=True, proxies= proxy_definitions)
                 if r.status_code == 200:
                     try:
-                        fileName = os.path.basename(line)
-                        if os.path.exists(outPath + fileName): # if file already exist store adding timestamp to it
-                            fileNameSplitted = os.path.splitext(fileName)
-                            if len(fileNameSplitted) == 2: # if file have an extension
-                                outFile = open(outPath + fileNameSplitted[0] + "_" +str(time.time())[0:5] + fileNameSplitted[1], 'wb') # file-123.txt
-                                outFile.write(r.content)
-                                outFile.close()
-                                continue # go for the next item
                         
-                        outFile = open(outPath + fileName, 'wb')
+                        url = urlparse(line)
+
+                        file_key = url.path[1:]                         # getting path (without first /)
+
+                        file_name = os.path.basename(file_key)          # getting file name
+                        dir_name = os.path.dirname(file_key) + "/"      # getting only dir
+
+                        if not os.path.exists(outPath + dir_name):
+                            os.makedirs(outPath + dir_name)
+                        
+                        outFile = open(outPath + dir_name + file_name, 'wb')
                         outFile.write(r.content)
                         outFile.close()
 
                     except:
                         print()
-                        print("[-] Error for file: " + fileName + "Error: " + e)
+                        print("[-] Error for file: " + file_name + "Error: " + e)
                         pass
                 else:
                     print()
